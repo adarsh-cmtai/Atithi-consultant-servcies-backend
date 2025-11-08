@@ -70,7 +70,13 @@ const loginUser = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.status(200).cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' }).json({
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    };
+
+    res.status(200).cookie("token", token, cookieOptions).json({
         message: "Logged in successfully",
         user: { 
             id: user._id, 
@@ -120,10 +126,12 @@ const resetPassword = async (req, res) => {
 };
 
 const logoutUser = (req, res) => {
-    res.clearCookie("token", {
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-    });
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    };
+    res.clearCookie("token", cookieOptions);
     res.status(200).json({ message: "Logged out successfully." });
 };
 
