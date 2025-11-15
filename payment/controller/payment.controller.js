@@ -1,28 +1,45 @@
-const paymentService = require("../service/payment.service.js");
+const { createCashfreeSession, verifyCashfreePayment } = require("../service/payment.service.js");
+const crypto = require("crypto");
 
-const createOrder = async (req, res) => {
-    try {
-        const order = await paymentService.generateOrder(req.body.amount);
-        res.status(200).json(order);
-    } catch (error) {
-        console.error("Error creating Razorpay order:", error);
-        res.status(500).json({ message: "Could not create payment order." });
-    }
+const createPaymentSession = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const orderId = `order_${crypto.randomBytes(8).toString("hex")}`;
+    const orderAmount = 450;
+
+    const sessionData = await createCashfreeSession(userId, orderId, orderAmount);
+    
+    res.status(200).json({
+      message: "Cashfree session created successfully",
+      data: sessionData,
+    });
+  } catch (error) {
+    console.error("Payment session error:", error);
+    res.status(500).json({ 
+      message: error.message || "Failed to create payment session." 
+    });
+  }
 };
 
-const verifyPayment = async (req, res) => {
-    try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-        const isValid = paymentService.validatePayment(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-        if (isValid) {
-            res.status(200).json({ success: true, message: "Payment verified successfully." });
-        } else {
-            res.status(400).json({ success: false, message: "Invalid payment signature." });
-        }
-    } catch (error) {
-        console.error("Error verifying payment:", error);
-        res.status(500).json({ message: "Payment verification failed." });
+const verifyPaymentWebhook = async (req, res) => {
+  const headers = req.headers;
+  const payload = req.rawBody;
+
+  const isValid = verifyCashfreePayment(headers, payload);
+
+  if (isValid) {
+    const eventData = req.body.data;
+    if (eventData.order.order_status === "PAID") {
+      console.log(`Payment successful for order: ${eventData.order.order_id}`);
+    } else {
+      console.log(`Payment status for order ${eventData.order.order_id}: ${eventData.order.order_status}`);
     }
+  } else {
+    console.error("Invalid webhook signature.");
+    return res.status(400).send("Invalid signature");
+  }
+
+  res.status(200).send("Webhook received");
 };
 
-module.exports = { createOrder, verifyPayment };
+module.exports = { createPaymentSession, verifyPaymentWebhook };

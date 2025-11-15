@@ -1,30 +1,76 @@
-const Razorpay = require("razorpay");
+const axios = require("axios");
 const crypto = require("crypto");
+const { User } = require("../../models/user.model.js");
 
-const razorpayInstance = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const CASHFREE_BASE_URL = process.env.CASHFREE_ENV === "PRODUCTION" 
+  ? "https://api.cashfree.com/pg" 
+  : "https://sandbox.cashfree.com/pg";
 
-const generateOrder = async (amount) => {
-    const options = {
-        amount: amount * 100, // Amount in paisa
-        currency: "INR",
-        receipt: `receipt_order_${new Date().getTime()}`,
+const createCashfreeSession = async (userId, orderId, orderAmount) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const request = {
+    order_id: orderId,
+    order_amount: orderAmount,
+    order_currency: "INR",
+    customer_details: {
+      customer_id: user._id.toString(),
+      customer_email: user.email,
+      customer_phone: user.phoneNumber,
+    },
+    order_meta: {
+      return_url: `${process.env.FRONTEND_URL}/payment-status?order_id={order_id}`,
+    },
+  };
+
+  try {
+    const response = await axios.post(
+      `${CASHFREE_BASE_URL}/orders`,
+      request,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-version": "2023-08-01",
+          "x-client-id": process.env.CASHFREE_APP_ID,
+          "x-client-secret": process.env.CASHFREE_SECRET_KEY,
+        },
+      }
+    );
+    
+    return {
+      payment_session_id: response.data.payment_session_id,
+      order_id: response.data.order_id,
+      order_status: response.data.order_status
     };
-    try {
-        const order = await razorpayInstance.orders.create(options);
-        return order;
-    } catch (error) {
-        throw new Error("Failed to create Razorpay order");
+  } catch (error) {
+    console.error("Cashfree API Error:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || "Failed to create payment session");
+  }
+};
+
+const verifyCashfreePayment = (headers, payload) => {
+  try {
+    const signature = headers["x-webhook-signature"];
+    const timestamp = headers["x-webhook-timestamp"];
+    
+    if (!signature || !timestamp) {
+      return false;
     }
+
+    const signatureData = timestamp + payload;
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY)
+      .update(signatureData)
+      .digest("base64");
+
+    return signature === generatedSignature;
+  } catch (error) {
+    console.error("Error verifying Cashfree signature:", error);
+    return false;
+  }
 };
 
-const validatePayment = (order_id, payment_id, signature) => {
-    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
-    sha.update(`${order_id}|${payment_id}`);
-    const digest = sha.digest("hex");
-    return digest === signature;
-};
-
-module.exports = { generateOrder, validatePayment };
+module.exports = { createCashfreeSession, verifyCashfreePayment };

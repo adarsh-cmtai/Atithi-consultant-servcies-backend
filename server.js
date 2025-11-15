@@ -18,6 +18,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 const allowedOrigins = [
+  "http://localhost:3000",
   "https://atithi-consultant-servcies-frontend.vercel.app",
   "https://www.athithconsultant.com",
   "https://athithconsultant.com"
@@ -34,7 +35,13 @@ app.use(cors({
   credentials: true
 }));
 
-
+app.use(express.json({
+    verify: (req, res, buf) => {
+        if (req.originalUrl.startsWith('/api/payments/webhook')) {
+            req.rawBody = buf.toString();
+        }
+    }
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -45,7 +52,7 @@ app.use("/api/applications", applicationRouter);
 app.use("/api/customer", customerRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/contact", contactRouter);
-app.use("/api/payment", paymentRouter);
+app.use("/api/payments", paymentRouter);
 
 app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "OK", message: "Server is healthy" });

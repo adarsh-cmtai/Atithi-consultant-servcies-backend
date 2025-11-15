@@ -27,9 +27,7 @@ const loanApplicationSchema = new mongoose.Schema({
     nomineeAadhaar: { type: String, required: true },
     declaration: { type: Boolean, required: true },
     paymentDetails: {
-        orderId: String,
-        paymentId: String,
-        amount: Number,
+        type: Object,
     },
 }, { timestamps: true });
 

@@ -2,17 +2,12 @@ const { createJobApplication, createLoanApplication } = require("../service/appl
 
 const submitJobApplication = async (req, res) => {
     try {
-        const { applicationData, paymentDetails } = req.body;
+        const applicationData = req.body;
         const userId = req.user._id;
-
-        if (!applicationData.declaration || !applicationData.authorized) {
-            return res.status(400).json({ message: "You must accept the declarations." });
+        if (!applicationData.declaration) {
+            return res.status(400).json({ message: "You must accept the declaration." });
         }
-        if (!paymentDetails || !paymentDetails.paymentId) {
-            return res.status(400).json({ message: "Payment details are missing or invalid." });
-        }
-
-        const newApplication = await createJobApplication(applicationData, userId, paymentDetails);
+        const newApplication = await createJobApplication(applicationData, userId);
         res.status(201).json({
             message: "Job application submitted successfully",
             data: newApplication,
@@ -25,17 +20,12 @@ const submitJobApplication = async (req, res) => {
 
 const submitLoanApplication = async (req, res) => {
     try {
-        const { applicationData, paymentDetails } = req.body;
+        const applicationData = req.body;
         const userId = req.user._id;
-
         if (!applicationData.declaration) {
             return res.status(400).json({ message: "You must accept the declaration." });
         }
-        if (!paymentDetails || !paymentDetails.paymentId) {
-            return res.status(400).json({ message: "Payment details are missing or invalid." });
-        }
-
-        const newApplication = await createLoanApplication(applicationData, userId, paymentDetails);
+        const newApplication = await createLoanApplication(applicationData, userId);
         res.status(201).json({
             message: "Loan application submitted successfully",
             data: newApplication,

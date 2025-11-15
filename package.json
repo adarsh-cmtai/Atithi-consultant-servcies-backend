@@ -20,7 +20,10 @@
   },
   "homepage": "https://github.com/adarsh-cmtai/Atithi-consultant-servcies-backend#readme",
   "dependencies": {
+    "@cashfreepayments/cashfree-sdk": "^0.1.7",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "cashfree-pg": "^5.1.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
