@@ -492,9 +492,27 @@ const deleteUser = async (userId) => {
     return true;
 };
 
+const exportAllJobApplications = async () => {
+    const applications = await JobApplication.find({})
+        .populate('userId', 'fullName email')
+        .sort({ createdAt: -1 })
+        .lean();
+    
+    return applications;
+};
+
+const exportAllLoanApplications = async () => {
+    const applications = await LoanApplication.find({})
+        .populate('userId', 'fullName email')
+        .sort({ createdAt: -1 })
+        .lean();
+    
+    return applications;
+};
+
 module.exports = {
     getDashboardOverview, getAnalyticsData, getAllJobApplications, getAllLoanApplications, 
     getWebsiteSettings, updateWebsiteSettings, getAllAdmins, createNewAdmin, getAllUsers,
     getAllInquiries, replyToInquiryById, getApplicationByIdForAdmin, updateStatusForApplication,
-    getUserDetails, deleteUser
+    getUserDetails, deleteUser, exportAllJobApplications, exportAllLoanApplications,
 };

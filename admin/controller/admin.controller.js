@@ -187,9 +187,35 @@ const deleteUserById = async (req, res) => {
     }
 };
 
+const exportJobApplications = async (req, res) => {
+    try {
+        const applications = await adminService.exportAllJobApplications();
+        res.status(200).json({
+            message: "All job applications fetched for export",
+            data: applications,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch applications for export." });
+    }
+};
+
+const exportLoanApplications = async (req, res) => {
+    try {
+        const applications = await adminService.exportAllLoanApplications();
+        res.status(200).json({
+            message: "All loan applications fetched for export",
+            data: applications,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch applications for export." });
+    }
+};
+
+
+
 module.exports = {
     getDashboard, getAnalytics, getUsers, getJobApplications, getLoanApplications,
     getSettings, updateSettings, getAdminUsers, addAdminUser, getInquiries, replyToInquiry,
     getJobApplicationById, getLoanApplicationById, updateJobApplicationStatus, updateLoanApplicationStatus,
-    getUserById, deleteUserById
+    getUserById, deleteUserById, exportJobApplications,  exportLoanApplications,
 };
