@@ -1,7 +1,9 @@
+// --- START OF FILE models/jobApplication.model.js ---
+
 const mongoose = require("mongoose");
 
 const jobApplicationSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false, default: null },
     status: { type: String, enum: ['Pending', 'In Review', 'Approved', 'Rejected'], default: 'Pending' },
     fullName: { type: String, required: true },
     dob: { type: Date },

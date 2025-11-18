@@ -1,3 +1,5 @@
+// --- START OF FILE payment/service/payment.service.js ---
+
 const axios = require("axios");
 const crypto = require("crypto");
 const { User } = require("../../models/user.model.js");
@@ -6,21 +8,37 @@ const CASHFREE_BASE_URL = process.env.CASHFREE_ENV === "PRODUCTION"
   ? "https://api.cashfree.com/pg" 
   : "https://sandbox.cashfree.com/pg";
 
-const createCashfreeSession = async (userId, orderId, orderAmount) => {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error("User not found");
+const createCashfreeSession = async (paymentInfo, orderId, orderAmount) => {
+  let customer_details;
+
+  if (paymentInfo.userId) {
+    const user = await User.findById(paymentInfo.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    customer_details = {
+      customer_id: user._id.toString(),
+      customer_email: user.email,
+      customer_phone: user.phoneNumber,
+      customer_name: user.fullName,
+    };
+  } else if (paymentInfo.customerDetails) {
+    const guestEmail = paymentInfo.customerDetails.customer_email;
+    const guestCustomerId = `guest_${guestEmail.replace(/[@.]/g, '_')}`;
+    
+    customer_details = {
+      ...paymentInfo.customerDetails,
+      customer_id: guestCustomerId,
+    };
+  } else {
+    throw new Error("Payment information is missing.");
   }
 
   const request = {
     order_id: orderId,
     order_amount: orderAmount,
     order_currency: "INR",
-    customer_details: {
-      customer_id: user._id.toString(),
-      customer_email: user.email,
-      customer_phone: user.phoneNumber,
-    },
+    customer_details: customer_details,
     order_meta: {
       return_url: `${process.env.FRONTEND_URL}/payment-status?order_id={order_id}`,
     },

@@ -1,9 +1,11 @@
+// --- START OF FILE applications/controller/application.controller.js ---
+
 const { createJobApplication, createLoanApplication } = require("../service/application.service.js");
 
 const submitJobApplication = async (req, res) => {
     try {
         const applicationData = req.body;
-        const userId = req.user._id;
+        const userId = req.user ? req.user._id : null;
         if (!applicationData.declaration) {
             return res.status(400).json({ message: "You must accept the declaration." });
         }
@@ -21,7 +23,7 @@ const submitJobApplication = async (req, res) => {
 const submitLoanApplication = async (req, res) => {
     try {
         const applicationData = req.body;
-        const userId = req.user._id;
+        const userId = req.user ? req.user._id : null;
         if (!applicationData.declaration) {
             return res.status(400).json({ message: "You must accept the declaration." });
         }

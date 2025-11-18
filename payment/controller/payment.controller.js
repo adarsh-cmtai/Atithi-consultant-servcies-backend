@@ -1,13 +1,32 @@
+// --- START OF FILE payment/controller/payment.controller.js ---
+
 const { createCashfreeSession, verifyCashfreePayment } = require("../service/payment.service.js");
 const crypto = require("crypto");
 
 const createPaymentSession = async (req, res) => {
   try {
-    const userId = req.user._id;
     const orderId = `order_${crypto.randomBytes(8).toString("hex")}`;
     const orderAmount = 450;
+    
+    let paymentInfo;
 
-    const sessionData = await createCashfreeSession(userId, orderId, orderAmount);
+    if (req.user) {
+      paymentInfo = { userId: req.user._id.toString() };
+    } else {
+      const { fullName, email, phone } = req.body;
+      if (!fullName || !email || !phone) {
+        return res.status(400).json({ message: "Customer details are required for guest payment." });
+      }
+      paymentInfo = {
+        customerDetails: {
+          customer_name: fullName,
+          customer_email: email,
+          customer_phone: phone,
+        }
+      };
+    }
+
+    const sessionData = await createCashfreeSession(paymentInfo, orderId, orderAmount);
     
     res.status(200).json({
       message: "Cashfree session created successfully",

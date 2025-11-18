@@ -312,20 +312,51 @@ const getAllJobApplications = async (queryParams) => {
     if (status) {
         matchStage.status = status;
     }
+
+    let searchMatch = {};
+    if (search) {
+        searchMatch = {
+            $or: [
+                { "applicant.fullName": { $regex: search, $options: 'i' } },
+                { "fullName": { $regex: search, $options: 'i' } }
+            ]
+        };
+    }
+
     let pipeline = [
         { $match: matchStage },
-        { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "applicant" } },
-        { $unwind: "$applicant" },
+        { 
+            $lookup: { 
+                from: "users", 
+                localField: "userId", 
+                foreignField: "_id", 
+                as: "applicant" 
+            } 
+        },
+        { 
+            $unwind: { 
+                path: "$applicant", 
+                preserveNullAndEmptyArrays: true 
+            } 
+        },
+        { $match: searchMatch },
     ];
-    if (search) {
-        pipeline.push({ $match: { "applicant.fullName": { $regex: search, $options: 'i' } } });
-    }
+    
     const applicationsPromise = JobApplication.aggregate([
         ...pipeline,
         { $sort: sort },
         { $skip: skip },
         { $limit: parseInt(limit) },
-        { $project: { _id: 1, applicantName: "$applicant.fullName", position: 1, submissionDate: "$createdAt", status: 1, assignedTo: "Admin" } }
+        { 
+            $project: { 
+                _id: 1, 
+                applicantName: { $ifNull: ["$applicant.fullName", "$fullName"] }, 
+                position: 1, 
+                submissionDate: "$createdAt", 
+                status: 1, 
+                assignedTo: "Admin" 
+            } 
+        }
     ]);
     const countPipeline = [...pipeline, { $count: "totalDocuments" }];
     const totalDocumentsPromise = JobApplication.aggregate(countPipeline);
@@ -346,20 +377,52 @@ const getAllLoanApplications = async (queryParams) => {
     if (status) {
         matchStage.status = status;
     }
+
+    let searchMatch = {};
+    if (search) {
+        searchMatch = {
+            $or: [
+                { "applicant.fullName": { $regex: search, $options: 'i' } },
+                { "fullName": { $regex: search, $options: 'i' } }
+            ]
+        };
+    }
+    
     let pipeline = [
         { $match: matchStage },
-        { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "applicant" } },
-        { $unwind: "$applicant" },
+        { 
+            $lookup: { 
+                from: "users", 
+                localField: "userId", 
+                foreignField: "_id", 
+                as: "applicant" 
+            } 
+        },
+        { 
+            $unwind: { 
+                path: "$applicant", 
+                preserveNullAndEmptyArrays: true 
+            } 
+        },
+        { $match: searchMatch },
     ];
-    if (search) {
-        pipeline.push({ $match: { "applicant.fullName": { $regex: search, $options: 'i' } } });
-    }
+    
     const applicationsPromise = LoanApplication.aggregate([
         ...pipeline,
         { $sort: sort },
         { $skip: skip },
         { $limit: parseInt(limit) },
-        { $project: { _id: 1, applicantName: "$applicant.fullName", loanAmount: 1, loanPurpose: 1, submissionDate: "$createdAt", status: 1, assignedTo: "Admin" } }
+        { 
+            $project: { 
+                _id: 1, 
+                applicantName: { $ifNull: ["$applicant.fullName", "$fullName"] }, 
+                loanAmount: 1, 
+                loanPurpose: 1, 
+                submissionDate: "$createdAt", 
+                status: 1, 
+                assignedTo: "Admin" 
+            } 
+        }
     ]);
     const countPipeline = [...pipeline, { $count: "totalDocuments" }];
     const totalDocumentsPromise = LoanApplication.aggregate(countPipeline);
@@ -493,20 +556,77 @@ const deleteUser = async (userId) => {
 };
 
 const exportAllJobApplications = async () => {
-    const applications = await JobApplication.find({})
-        .populate('userId', 'fullName email')
-        .sort({ createdAt: -1 })
-        .lean();
-    
+    const applications = await JobApplication.aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        },
+        {
+            $unwind: {
+                path: '$user',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                applicationId: '$_id',
+                applicantName: { $ifNull: ['$user.fullName', '$fullName'] },
+                applicantEmail: { $ifNull: ['$user.email', '$email'] },
+                status: 1,
+                position: 1,
+                phone: 1,
+                dob: 1, age: 1, gender: 1, address: 1, city: 1, state: 1, zip: 1,
+                currentSalary: 1, expectedSalary: 1, experience: 1, currentLocation: 1,
+                noticePeriod: 1, preferLocation: 1, authorized: 1, employerName: 1,
+                department: 1, startDate: 1, endDate: 1, reasonForLeaving: 1,
+                currentDesignation: 1, degree: 1, percentage: 1, aadhaar: 1, uan: 1,
+                languages: 1, submissionDate: '$createdAt'
+            }
+        }
+    ]);
     return applications;
 };
 
 const exportAllLoanApplications = async () => {
-    const applications = await LoanApplication.find({})
-        .populate('userId', 'fullName email')
-        .sort({ createdAt: -1 })
-        .lean();
-    
+    const applications = await LoanApplication.aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        },
+        {
+            $unwind: {
+                path: '$user',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                applicationId: '$_id',
+                applicantName: { $ifNull: ['$user.fullName', '$fullName'] },
+                applicantEmail: { $ifNull: ['$user.email', '$email'] },
+                status: 1,
+                pan: 1,
+                dob: 1, gender: 1, maritalStatus: 1, contact: 1,
+                address: 1, city: 1, postalCode: 1, country: 1,
+                position: 1, employmentDate: 1, employmentType: 1, monthlyIncome: 1,
+                otherIncome: 1, loanAmount: 1, loanPurpose: 1,
+                nomineeName: 1, nomineeContact: 1, nomineeAadhaar: 1,
+                submissionDate: '$createdAt'
+            }
+        }
+    ]);
     return applications;
 };
 
