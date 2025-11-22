@@ -11,7 +11,7 @@ const settingSchema = new mongoose.Schema({
     },
     applicationFee: {
         type: Number,
-        default: 450
+        default: 1
     }
 }, { timestamps: true });
 
