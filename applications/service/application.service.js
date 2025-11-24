@@ -13,6 +13,33 @@ const createJobApplication = async (applicationData, userId, paymentDetails) => 
         });
         const savedApplication = await newApplication.save();
 
+        const applicationID = savedApplication._id.toString().slice(-8).toUpperCase();
+
+        const userEmail = savedApplication.email;
+        const userName = savedApplication.fullName;
+        const userSubject = `Application Received: ${savedApplication.position} (ID: ${applicationID})`;
+        const userEmailHtml = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #0047ab;">Thank you for your application, ${userName}!</h2>
+                <p>We have successfully received your job application for the position of <strong>${savedApplication.position}</strong>.</p>
+                <p>Our team will review your profile and get back to you shortly. You can use the Application ID below for any future correspondence.</p>
+                <div style="background-color: #f0f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Your Application Details:</h3>
+                    <p><strong>Application ID:</strong> ${applicationID}</p>
+                    <p><strong>Position Applied For:</strong> ${savedApplication.position}</p>
+                    <p><strong>Submission Date:</strong> ${new Date(savedApplication.createdAt).toLocaleDateString('en-GB')}</p>
+                </div>
+                <p>Best Regards,</p>
+                <p><strong>Atithi Consultant Services Team</strong></p>
+            </div>
+        `;
+
+        try {
+            await sendEmail(userEmail, userSubject, userEmailHtml);
+        } catch (error) {
+            console.error(`Failed to send confirmation email to user ${userEmail}:`, error);
+        }
+
         if (!userId) {
             const adminEmail = process.env.ADMIN_EMAIL;
             if (adminEmail) {
@@ -53,6 +80,34 @@ const createLoanApplication = async (applicationData, userId, paymentDetails) =>
             paymentDetails
         });
         const savedApplication = await newApplication.save();
+        
+        const applicationID = savedApplication._id.toString().slice(-8).toUpperCase();
+
+        const userEmail = savedApplication.email;
+        const userName = savedApplication.fullName;
+        const userSubject = `Loan Application Received: ${savedApplication.loanPurpose} (ID: ${applicationID})`;
+        const userEmailHtml = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #0047ab;">Thank you for your application, ${userName}!</h2>
+                <p>We have successfully received your loan application for <strong>${savedApplication.loanPurpose}</strong>.</p>
+                <p>Our team will review your details and get back to you shortly. You can use the Application ID below for any future correspondence.</p>
+                <div style="background-color: #f0f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Your Application Details:</h3>
+                    <p><strong>Application ID:</strong> ${applicationID}</p>
+                    <p><strong>Loan Purpose:</strong> ${savedApplication.loanPurpose}</p>
+                    <p><strong>Loan Amount:</strong> ${savedApplication.loanAmount}</p>
+                    <p><strong>Submission Date:</strong> ${new Date(savedApplication.createdAt).toLocaleDateString('en-GB')}</p>
+                </div>
+                <p>Best Regards,</p>
+                <p><strong>Atithi Consultant Services Team</strong></p>
+            </div>
+        `;
+
+        try {
+            await sendEmail(userEmail, userSubject, userEmailHtml);
+        } catch (error) {
+            console.error(`Failed to send confirmation email to user ${userEmail}:`, error);
+        }
 
         if (!userId) {
             const adminEmail = process.env.ADMIN_EMAIL;

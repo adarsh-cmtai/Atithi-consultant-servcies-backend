@@ -6,7 +6,7 @@ const crypto = require("crypto");
 const createPaymentSession = async (req, res) => {
   try {
     const orderId = `order_${crypto.randomBytes(8).toString("hex")}`;
-    const orderAmount = 1;
+    const orderAmount = 450;
     
     let paymentInfo;
 
